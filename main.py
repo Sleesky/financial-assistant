@@ -1,5 +1,10 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+import models
+from database import engine
+
+# To stworzy plik finance.db i tabele przy starcie aplikacji
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Inteligentny Asystent Finansowy")
 
