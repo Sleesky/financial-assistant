@@ -3,7 +3,8 @@ import json
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 # Ładowanie zmiennych środowiskowych
@@ -11,12 +12,25 @@ load_dotenv()
 
 app = FastAPI()
 
-# Konfiguracja Google Gemini
+# Konfiguracja klienta Google Gemini (Nowa biblioteka)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+client = None
+
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    # Inicjalizacja klienta
+    client = genai.Client(api_key=GEMINI_API_KEY)
 else:
     print("UWAGA: Brak klucza GEMINI_API_KEY w pliku .env")
+
+
+# --- DIAGNOSTYKA PRZY STARCIE ---
+@app.on_event("startup")
+async def startup_check():
+    if not client:
+        print("--- DIAGNOSTYKA: BRAK KLIENTA (Sprawdź klucz API) ---")
+        return
+    # Tylko logujemy informację, że startuje
+    print("--- Aplikacja startuje. Klient Gemini skonfigurowany. ---")
 
 
 # 1. Endpoint do serwowania strony głównej (Frontend)
@@ -25,21 +39,18 @@ async def read_index():
     return FileResponse('static/index.html')
 
 
-# 2. Moduł Skanowania (Core Feature - Upload paragonu) [cite: 10, 11]
+# 2. Moduł Skanowania
 @app.post("/api/scan-receipt")
 async def scan_receipt(file: UploadFile = File(...)):
-    if not GEMINI_API_KEY:
+    if not client:
         raise HTTPException(status_code=500, detail="Brak konfiguracji API Gemini")
 
     try:
-        # Odczyt pliku
-        content = await file.read()
+        # Odczyt pliku do pamięci
+        file_content = await file.read()
 
-        # Przygotowanie modelu (np. gemini-1.5-flash jest szybki i tani)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-
-        # Prompt zgodny z dokumentacją [cite: 41]
-        prompt = """
+        # Prompt
+        prompt_text = """
         Przeanalizuj to zdjęcie paragonu i zwróć tylko czysty JSON (bez markdown) z następującymi polami:
         - store_name (string)
         - date (string YYYY-MM-DD)
@@ -48,34 +59,58 @@ async def scan_receipt(file: UploadFile = File(...)):
         - category (string, np. 'Spożywcze', 'Paliwo', 'Inne')
         """
 
-        # Wywołanie AI
-        response = model.generate_content([
-            {'mime_type': file.content_type, 'data': content},
-            prompt
-        ])
+        # ZMIANA: Używamy modelu dostępnego na Twojej liście
+        model_name = "gemini-flash-latest"
 
-        # Proste czyszczenie odpowiedzi (czasem AI dodaje ```json ... ```)
+        print(f"Analiza przy użyciu modelu: {model_name}")
+
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[
+                types.Content(
+                    parts=[
+                        types.Part.from_bytes(
+                            data=file_content,
+                            mime_type=file.content_type
+                        ),
+                        types.Part.from_text(text=prompt_text),
+                    ]
+                )
+            ]
+        )
+
+        if not response.text:
+            raise ValueError("API zwróciło pustą odpowiedź.")
+
+        # Czyszczenie odpowiedzi
         json_str = response.text.replace("```json", "").replace("```", "").strip()
         data = json.loads(json_str)
 
         return data
 
     except Exception as e:
+        print(f"Błąd API: {e}")
         return {"error": str(e)}
 
 
-# 3. Asystent Finansowy (Chatbot) [cite: 22]
+# 3. Asystent Finansowy (Chatbot)
 @app.post("/api/chat")
 async def chat_with_assistant(query: dict):
-    # Tutaj w przyszłości dodasz kontekst z bazy danych (RAG) [cite: 52]
+    if not client:
+        return {"reply": "Błąd konfiguracji API"}
+
     user_message = query.get("message")
 
-    # Na razie prosty echo-bot z Gemini
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(f"Jesteś asystentem finansowym. Użytkownik pyta: {user_message}")
+    try:
+        # ZMIANA: Tutaj również używamy modelu z Twojej listy
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=f"Jesteś asystentem finansowym. Użytkownik pyta: {user_message}"
+        )
+        return {"reply": response.text}
+    except Exception as e:
+        return {"reply": f"Błąd chatu: {str(e)}"}
 
-    return {"reply": response.text}
 
-
-# Serwowanie plików statycznych (CSS, JS) - musi być na końcu
+# Serwowanie plików statycznych
 app.mount("/static", StaticFiles(directory="static"), name="static")
