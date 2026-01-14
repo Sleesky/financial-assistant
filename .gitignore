@@ -1,5 +1,47 @@
-.env
+# --- Python ---
+# Pliki skompilowane (bytecode) - niepotrzebne w repozytorium
 __pycache__/
+*.py[cod]
+*$py.class
+
+# --- Zmienne środowiskowe i bezpieczeństwo (BARDZO WAŻNE) ---
+# Ignorujemy plik .env, który zawiera Twój klucz API Gemini
+.env
+.env.local
+.env.*.local
+
+# --- Wirtualne środowiska (jeśli odpalasz lokalnie bez Dockera) ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Baza danych ---
+# SQLite to plik binarny, który zmienia się często.
+# Nie chcemy go w git, bo powoduje konflikty i zawiera dane użytkowników[cite: 9].
 *.db
-.idea/
+*.sqlite3
+*.sqlite
+backend/*.db
+
+# --- Docker ---
+# Logi i tymczasowe pliki dockera (jeśli są mapowane)
+.docker
+docker-compose.override.yml
+
+# --- Pliki systemowe i IDE ---
+# macOS
 .DS_Store
+# VS Code
+.vscode/
+# PyCharm
+.idea/
+
+# --- Dane użytkownika / Uploady ---
+# Jeśli będziesz zapisywać zdjęcia paragonów na dysku,
+# nie powinny one trafić do repozytorium kodu.
+uploads/
+images/
+*.jpg
+*.png
+*.jpeg

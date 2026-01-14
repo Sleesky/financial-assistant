@@ -1,11 +1,19 @@
+version: '3.8'
+
 services:
-  financial-assistant:
-    build: .
-    container_name: asystent-finansowy
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fin_assistant_app
     ports:
-      - "8000:8000"  # Przekieruj port 8000 z kontenera na Twój komputer
+      - "8000:8000"
     volumes:
-      - .:/app       # "Mapowanie" plików: zmiany w kodzie na Twoim dysku od razu trafią do kontenera
+      # Mapowanie kodu backendu (zmiany widoczne od razu)
+      - ./backend:/app
+      # Mapowanie kodu frontendu
+      - ./frontend:/app/static
     env_file:
-      - .env         # Wczytaj Twój klucz API z pliku .env
-    restart: unless-stopped
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1

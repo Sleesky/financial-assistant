@@ -1,19 +1,23 @@
-# Używamy lekkiej wersji Pythona (Linux Alpine lub Slim)
+# Używamy oficjalnego obrazu Python w wersji slim
 FROM python:3.11-slim
 
-# Ustawiamy katalog roboczy wewnątrz kontenera
+# Ustawiamy katalog roboczy w kontenerze
 WORKDIR /app
 
-# Kopiujemy listę bibliotek i instalujemy je
-# (Robimy to przed skopiowaniem kodu, żeby Docker użył cache'a, gdy zmienisz tylko kod)
-COPY requirements.txt .
+# Kopiujemy plik z zależnościami
+COPY backend/requirements.txt .
+
+# Instalujemy zależności
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiujemy resztę plików aplikacji do kontenera
-COPY . .
+# Kopiujemy kod backendu
+COPY backend/ .
 
-# Informujemy, że aplikacja używa portu 8000
+# Kopiujemy frontend (aby FastAPI mógł go serwować jako pliki statyczne)
+COPY frontend/ ./static
+
+# Otwieramy port 8000
 EXPOSE 8000
 
-# Komenda startowa (nasłuchujemy na 0.0.0.0, żeby Docker widział ruch z zewnątrz)
+# Uruchamiamy serwer (z opcją reload dla trybu deweloperskiego)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

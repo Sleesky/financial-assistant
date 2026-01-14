@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inteligentny Asystent Finansowy</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Asystent Finansowy</h1>
+        </header>
+
+        <section id="scan-section">
+            <h2>Dodaj Paragon</h2>
+            <input type="file" id="receiptInput" accept="image/*">
+            <button onclick="uploadReceipt()">Analizuj Paragon</button>
+            <div id="scanResult"></div>
+        </section>
+
+        <hr>
+
+        <section id="dashboard-section">
+            <h2>Twoje Wydatki</h2>
+            <p>Tutaj pojawi się wykres (później).</p>
+        </section>
+
+        <hr>
+
+        <section id="chat-section">
+            <h2>Zapytaj Asystenta</h2>
+            <div id="chatWindow"></div>
+            <input type="text" id="chatInput" placeholder="Np. Ile wydałem w Biedronce?">
+            <button onclick="sendMessage()">Wyślij</button>
+        </section>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
