@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inteligentny Asystent Finansowy</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -51,27 +50,6 @@
                     Status: <span id="ui-status">---</span> (ID Bazy: <span id="ui-db-id">---</span>)
                 </div>
             </div>
-        </section>
-
-        <hr>
-
-        <section id="dashboard-section">
-            <h2>Twoje Wydatki</h2>
-            <div style="max-width: 400px; margin: 0 auto;">
-                <canvas id="expensesChart"></canvas>
-            </div>
-            <button onclick="loadDashboard()" style="margin-top: 10px; width: 100%;">Odśwież Wykres</button>
-        </section>
-
-        <hr>
-
-        <section id="history-section">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Historia Paragonów</h2>
-                <button onclick="loadHistory()" style="padding: 5px 15px; font-size: 0.9em;">🔄 Odśwież</button>
-            </div>
-
-            <div id="history-list" style="margin-top: 15px;"></div>
         </section>
 
         <hr>
