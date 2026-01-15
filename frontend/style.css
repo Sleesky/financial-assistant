@@ -129,3 +129,94 @@ input[type="text"], input[type="file"] {
     color: #3498db;
     padding: 20px;
 }
+
+/* --- HISTORIA PARAGONÓW --- */
+.history-item {
+    background: white;
+    border: 1px solid #eee;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    transition: transform 0.2s;
+}
+
+.history-item:hover {
+    transform: translateX(5px);
+    border-left: 4px solid #3498db;
+}
+
+.history-info strong {
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.history-date {
+    font-size: 0.85em;
+    color: #888;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+/* --- MODAL (POPUP) --- */
+.modal {
+    display: none; /* Domyślnie ukryty */
+    position: fixed;
+    z-index: 1000; /* Zawsze na wierzchu */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Półprzezroczyste czarne tło */
+    backdrop-filter: blur(5px); /* Rozmycie tła (ładny efekt) */
+}
+
+.modal-content {
+    margin: 5% auto; /* Odstęp od góry */
+    width: 90%;
+    max-width: 500px; /* Szerokość taka jak paragonu */
+    position: relative;
+    animation: slideDown 0.3s ease-out;
+}
+
+/* Przycisk zamknij (X) */
+.close-btn {
+    color: #fff;
+    float: right;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: -30px;
+    top: -10px;
+}
+
+.close-btn:hover {
+    color: #ccc;
+}
+
+/* Animacja wjazdu */
+@keyframes slideDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Zmieniamy kursor na liście historii, żeby sugerował kliknięcie */
+.history-item {
+    cursor: pointer;
+}

@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f1ae4aff-a7ca-4b35-8e82-8689c9e0076a" name="Changes" comment="Szkielet projektu">
+    <list default="true" id="f1ae4aff-a7ca-4b35-8e82-8689c9e0076a" name="Changes" comment="historia paragonow z usuwaniem">
       <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/script.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/script.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/style.css" afterDir="false" />
@@ -190,7 +189,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768498197423</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="historia paragonow z usuwaniem">
+      <option name="closed" value="true" />
+      <created>1768502600707</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1768502600707</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -210,7 +217,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Szkielet projektu" />
     <MESSAGE value=" Dodano obsługę bazy danych SQLite i zapis paragonów" />
-    <option name="LAST_COMMIT_MESSAGE" value=" Dodano obsługę bazy danych SQLite i zapis paragonów" />
+    <MESSAGE value="historia paragonow z usuwaniem" />
+    <option name="LAST_COMMIT_MESSAGE" value="historia paragonow z usuwaniem" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
