@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>Inteligentny Asystent Finansowy</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -14,35 +13,46 @@
         </header>
 
         <section id="scan-section">
-            <h2>Dodaj Paragony</h2>
-
-            <div id="upload-area" class="upload-area" onclick="document.getElementById('receiptInput').click()">
-                <p>Kliknij, aby wybrać pliki</p>
-                <p>Przeciągnij i upuść tutaj lub wciśnij <strong>Ctrl+V</strong></p>
-                <input type="file" id="receiptInput" accept="image/*" multiple style="display: none;">
-            </div>
-
-            <div id="file-list" class="file-list"></div>
-
-            <div style="text-align: center; margin-top: 15px;">
-                <button onclick="processQueue()">Analizuj Wszystkie (<span id="queue-count">0</span>)</button>
+            <h2>Dodaj Paragon</h2>
+            <div style="text-align: center;">
+                <input type="file" id="receiptInput" accept="image/*">
+                <button onclick="uploadReceipt()">Analizuj Paragon</button>
             </div>
 
             <div id="loader" class="loader">
-                🌀 Przetwarzanie paragonu <span id="current-progress">0/0</span>...
+                🌀 Analizuję paragon z Gemini AI...
             </div>
 
-            <div id="results-container"></div>
+            <div id="receipt-card" class="receipt-card">
+                <div class="receipt-header">
+                    <h3 id="ui-store">Nazwa Sklepu</h3>
+                    <div class="receipt-info">
+                        Data: <span id="ui-date">---</span> | Kat: <span id="ui-category">---</span>
+                    </div>
+                </div>
+
+                <table class="receipt-table">
+                    <thead>
+                        <tr>
+                            <th>Produkt</th>
+                            <th style="text-align: right;">Cena</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ui-items">
+                        </tbody>
+                </table>
+
+                <div class="receipt-total">
+                    SUMA: <span id="ui-total" class="total-price">0.00</span> PLN
+                </div>
+
+                <div class="receipt-footer">
+                    Status: <span id="ui-status">---</span> (ID Bazy: <span id="ui-db-id">---</span>)
+                </div>
+            </div>
         </section>
 
         <hr>
-
-        <hr>
-
-        <section id="chart-section" style="max-width: 500px; margin: 0 auto; text-align: center;">
-            <h2>Statystyki Wydatków</h2>
-            <canvas id="expensesChart"></canvas>
-        </section>
 
         <section id="chat-section">
             <h2>Zapytaj Asystenta</h2>
