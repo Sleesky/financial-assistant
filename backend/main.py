@@ -141,6 +141,39 @@ async def scan_receipt(file: UploadFile = File(...), db: Session = Depends(get_d
         print(f"Błąd API: {e}")
         return {"error": str(e)}
 
+@app.get("/api/receipts")
+def get_receipts(db: Session = Depends(get_db)):
+    # 1. Pobieramy obiekty z bazy
+    receipts = db.query(models.Receipt).all()
+
+    # 2. Ręcznie przerabiamy na JSON (żeby uniknąć pętli i błędów 500)
+    results = []
+    for r in receipts:
+        results.append({
+            "id": r.id,
+            "store_name": r.store_name,
+            "date": r.date,
+            "total_amount": r.total_amount,
+            "category": r.category,
+            "items": [{"name": i.name, "price": i.price} for i in r.items]
+        })
+
+    return results
+
+# Endpoint do usuwania paragonu
+@app.delete("/api/receipts/{receipt_id}")
+def delete_receipt(receipt_id: int, db: Session = Depends(get_db)):
+    # Szukamy paragonu po ID
+    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Paragon nie istnieje")
+
+    # Usuwamy
+    db.delete(receipt)
+    db.commit()
+
+    return {"message": "Paragon usunięty pomyślnie"}
 
 # 3. Asystent Finansowy (Chatbot)
 @app.post("/api/chat")
