@@ -1,16 +1,32 @@
 import os
 import json
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
+# --- IMPORTS BAZY DANYCH ---
+from sqlalchemy.orm import Session
+import models
+from database import SessionLocal, engine
+
 # Ładowanie zmiennych środowiskowych
 load_dotenv()
 
+# --- INICJALIZACJA BAZY ---
+# To stworzy plik finance.db i tabele, jeśli ich nie ma
+models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
+# Funkcja pomocnicza do pobierania sesji bazy (Dependency)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Konfiguracja klienta Google Gemini (Nowa biblioteka)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -41,7 +57,7 @@ async def read_index():
 
 # 2. Moduł Skanowania
 @app.post("/api/scan-receipt")
-async def scan_receipt(file: UploadFile = File(...)):
+async def scan_receipt(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not client:
         raise HTTPException(status_code=500, detail="Brak konfiguracji API Gemini")
 
@@ -86,6 +102,39 @@ async def scan_receipt(file: UploadFile = File(...)):
         json_str = response.text.replace("```json", "").replace("```", "").strip()
         data = json.loads(json_str)
 
+        # --- ZAPIS DO BAZY DANYCH ---
+        try:
+            # 1. Tworzymy paragon
+            db_receipt = models.Receipt(
+                store_name=data.get("store_name", "Nieznany"),
+                date=data.get("date"),
+                total_amount=data.get("total_amount", 0.0),
+                category=data.get("category", "Inne")
+            )
+            db.add(db_receipt)
+            db.commit()  # Zatwierdzamy, żeby dostać ID
+            db.refresh(db_receipt)
+
+            # 2. Tworzymy produkty
+            for item in data.get("items", []):
+                db_item = models.Item(
+                    name=item.get("name", "Produkt"),
+                    price=item.get("price", 0.0),
+                    receipt_id=db_receipt.id
+                )
+                db.add(db_item)
+
+            db.commit()  # Zapisujemy produkty
+
+            # Dodajemy ID do zwracanego JSONa, żeby frontend wiedział, że zapisano
+            data["db_id"] = db_receipt.id
+            data["status"] = "saved"
+            print(f"✅ Zapisano paragon w bazie ID: {db_receipt.id}")
+
+        except Exception as db_err:
+            print(f"⚠️ Błąd zapisu do bazy: {db_err}")
+            data["status"] = "ai_only_db_error"
+
         return data
 
     except Exception as e:
@@ -102,7 +151,6 @@ async def chat_with_assistant(query: dict):
     user_message = query.get("message")
 
     try:
-        # ZMIANA: Tutaj również używamy modelu z Twojej listy
         response = client.models.generate_content(
             model="gemini-flash-latest",
             contents=f"Jesteś asystentem finansowym. Użytkownik pyta: {user_message}"
