@@ -6,7 +6,7 @@ __pycache__/
 
 # --- Zmienne środowiskowe i bezpieczeństwo (BARDZO WAŻNE) ---
 # Ignorujemy plik .env, który zawiera Twój klucz API Gemini
-.env
+backend/.env
 .env.local
 .env.*.local
 

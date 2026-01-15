@@ -3,117 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inteligentny Asystent Finansowy</title>
+    <title>iFinAI 2.0</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.0/css/all.css">
     <link rel="stylesheet" href="/static/style.css">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Asystent Finansowy</h1>
-        </header>
-
-        <section id="scan-section">
-            <h2>Dodaj Paragon</h2>
-            <div style="text-align: center;">
-                <input type="file" id="receiptInput" accept="image/*">
-                <button onclick="uploadReceipt()">Analizuj Paragon</button>
+    <div class="app-container">
+        <aside class="sidebar glass-effect">
+            <div class="logo">
+                <div class="logo-icon"><i class="fa-solid fa-wallet"></i></div>
+                <span>iFinAI</span>
             </div>
-
-            <div id="loader" class="loader">
-                🌀 Analizuję paragon z Gemini AI...
+            <nav class="nav-menu">
+                <a href="#" onclick="switchView('dashboard')" class="nav-link active" id="nav-dashboard">
+                    <i class="fa-light fa-grid-2"></i> Pulpit
+                </a>
+                <a href="#" onclick="switchView('history')" class="nav-link" id="nav-history">
+                    <i class="fa-light fa-calendar-lines-pen"></i> Historia
+                </a>
+                <a href="#" onclick="switchView('dashboard'); document.getElementById('receiptInput').click();" class="nav-link">
+                    <i class="fa-light fa-plus"></i> Szybki Dodaj
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button onclick="toggleTheme()" class="theme-btn"><i class="fa-light fa-moon"></i> Tryb nocny</button>
             </div>
+        </aside>
 
-            <div id="receipt-card" class="receipt-card">
-                <div class="receipt-header">
-                    <h3 id="ui-store">Nazwa Sklepu</h3>
-                    <div class="receipt-info">
-                        Data: <span id="ui-date">---</span> | Kat: <span id="ui-category">---</span>
+        <main class="main-content">
+
+            <section id="view-dashboard" class="view-section active">
+                <div class="dashboard-layout">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue"><i class="fa-light fa-coins"></i></div>
+                            <div class="stat-info"><span class="stat-label">Wydatki</span><h3 id="stat-total">0.00 zł</h3></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green"><i class="fa-light fa-receipt"></i></div>
+                            <div class="stat-info"><span class="stat-label">Paragony</span><h3 id="stat-count">0</h3></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple"><i class="fa-light fa-trophy"></i></div>
+                            <div class="stat-info"><span class="stat-label">Top Kat.</span><h3 id="stat-top-cat">---</h3></div>
+                        </div>
+                    </div>
+
+                    <div class="col-left">
+                        <section id="chart-section" class="card">
+                            <div class="card-header"><h3>Analiza Wydatków</h3></div>
+                            <div class="chart-container"><canvas id="expensesChart"></canvas></div>
+                        </section>
+
+                        <section class="card upload-card" style="padding: 15px;">
+                            <div id="drop-zone" class="drop-zone" style="padding: 20px;">
+                                <i class="fa-thin fa-cloud-arrow-up upload-icon" style="font-size: 2em;"></i>
+                                <p>Upuść paragony tutaj</p>
+                                <input type="file" id="receiptInput" accept="image/*, .heic, .heif" multiple hidden>
+                            </div>
+                            <div id="preview-container" class="preview-container"></div>
+
+                            <button onclick="uploadReceipts()" id="upload-btn" class="btn-primary pill full-width" style="display: none; margin-top: 10px;">
+                                Analizuj
+                            </button>
+
+                            <div id="loader" class="loader" style="display: none;">
+                                <div class="spinner"></div><span>AI przetwarza...</span>
+                            </div>
+                            <div id="status-message" class="status-text"></div>
+                        </section>
+                    </div>
+
+                    <div class="col-right">
+                        <section class="card" style="height: 100%; display: flex; flex-direction: column;">
+                            <div class="card-header"><h3>Ostatnie</h3></div>
+                            <div id="recent-list" class="recent-list-container history-list"></div>
+                        </section>
                     </div>
                 </div>
+            </section>
 
-                <table class="receipt-table">
-                    <thead>
-                        <tr>
-                            <th>Produkt</th>
-                            <th style="text-align: right;">Cena</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ui-items">
-                        </tbody>
-                </table>
+            <section id="view-history" class="view-section">
+                <header class="top-bar" style="margin-bottom: 20px;">
+                    <div class="search-wrapper">
+                        <i class="fa-light fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Szukaj (sklep, produkt)..." onkeyup="renderFullHistoryPage()">
+                    </div>
+                    <div class="top-actions">
+                        <div class="date-range">
+                            <input type="date" id="date-from" onchange="renderFullHistoryPage()">
+                            <span>-</span>
+                            <input type="date" id="date-to" onchange="renderFullHistoryPage()">
+                        </div>
+                        <button onclick="exportToCSV()" class="btn-icon" title="Eksport CSV">
+                            <i class="fa-light fa-file-csv"></i>
+                        </button>
+                    </div>
+                </header>
 
-                <div class="receipt-total">
-                    SUMA: <span id="ui-total" class="total-price">0.00</span> PLN
+                <div class="history-view-container">
+                    <div id="full-history-list" class="history-scroll-area"></div>
                 </div>
+            </section>
 
-                <div class="receipt-footer">
-                    Status: <span id="ui-status">---</span> (ID Bazy: <span id="ui-db-id">---</span>)
-                </div>
-            </div>
-        </section>
-
-        <hr>
-
-        <section id="dashboard-section">
-            <h2>Twoje Wydatki</h2>
-            <div style="max-width: 400px; margin: 0 auto;">
-                <canvas id="expensesChart"></canvas>
-            </div>
-            <button onclick="loadDashboard()" style="margin-top: 10px; width: 100%;">Odśwież Wykres</button>
-        </section>
-
-        <hr>
-
-        <section id="history-section">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Historia Paragonów</h2>
-                <button onclick="loadHistory()" style="padding: 5px 15px; font-size: 0.9em;">🔄 Odśwież</button>
-            </div>
-
-            <div id="history-list" style="margin-top: 15px;"></div>
-        </section>
-
-        <hr>
-
-        <section id="chat-section">
-            <h2>Zapytaj Asystenta</h2>
-            <div id="chatWindow" style="border:1px solid #eee; padding:10px; height:200px; overflow-y:scroll; margin-bottom:10px;"></div>
-            <div style="display: flex;">
-                <input type="text" id="chatInput" placeholder="Np. Ile wydałem w Biedronce?" style="flex-grow: 1;">
-                <button onclick="sendMessage()">Wyślij</button>
-            </div>
-        </section>
-
+        </main>
     </div> <div id="details-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div class="modal-content glass-modal receipt-look">
+            <span class="close-btn" onclick="closeModal('details-modal')">&times;</span>
+            <div class="modal-header">Edycja Paragonu</div>
 
-            <div class="receipt-card" style="display: block; margin: 0;">
-                <div class="receipt-header">
-                    <h3 id="modal-store">---</h3>
-                    <div class="receipt-info">
-                        Data: <span id="modal-date">---</span> | Kat: <span id="modal-category">---</span>
+            <div class="edit-form">
+                <div class="form-group">
+                    <label>Sklep</label>
+                    <input type="text" id="modal-store" class="modern-input pill">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="text" id="modal-date" class="modern-input pill">
+                    </div>
+                    <div class="form-group">
+                        <label>Kategoria</label>
+                        <input type="text" id="modal-category" class="modern-input pill">
                     </div>
                 </div>
+            </div>
 
-                <table class="receipt-table">
-                    <thead>
-                        <tr>
-                            <th>Produkt</th>
-                            <th style="text-align: right;">Cena</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modal-items">
-                        </tbody>
-                </table>
+            <table class="modern-table">
+                <thead><tr><th>Produkt</th><th class="text-right">Cena</th><th></th></tr></thead>
+                <tbody id="modal-items"></tbody>
+            </table>
+            <button onclick="addNewItemRow()" class="btn-dashed pill">+ Dodaj pozycję</button>
 
-                <div class="receipt-total">
-                    SUMA: <span id="modal-total" class="total-price">0.00</span> PLN
+            <div class="modal-footer-summary apple-style">
+                <span>Suma:</span>
+                <div class="sum-wrapper">
+                    <input type="number" id="modal-total" class="sum-input">
+                    <button onclick="autoFixSum()" class="btn-icon-mini">
+                        <i class="fa-light fa-calculator"></i>
+                    </button>
                 </div>
+            </div>
+
+            <button onclick="saveReceiptChanges()" class="btn-primary pill full-width">Zapisz zmiany</button>
+            <input type="hidden" id="modal-receipt-id">
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content glass-modal dialog">
+            <div class="dialog-icon danger"><i class="fa-light fa-trash"></i></div>
+            <h3>Usunąć paragon?</h3>
+            <p id="confirm-text">Tej operacji nie można cofnąć.</p>
+            <div class="dialog-actions">
+                <button onclick="closeModal('confirmation-modal')" class="btn-secondary pill">Anuluj</button>
+                <button id="confirm-yes-btn" class="btn-danger pill">Usuń</button>
             </div>
         </div>
     </div>
+
+    <div id="mismatch-modal" class="modal">
+        <div class="modal-content glass-modal dialog">
+            <div class="dialog-icon warning"><i class="fa-light fa-exclamation-triangle"></i></div>
+            <h3>Niezgodność sumy</h3>
+            <p id="mismatch-text">Matematyka się nie zgadza.</p>
+            <div class="dialog-actions column">
+                <button id="mismatch-fix-btn" class="btn-success pill">Napraw sumę (<span id="mismatch-new-sum"></span>)</button>
+                <button id="mismatch-save-btn" class="btn-secondary pill">Zapisz mimo to</button>
+                <button onclick="closeModal('mismatch-modal')" class="btn-text pill">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-widget" class="chat-widget glass-effect">
+        <div class="chat-header">
+            <span>Asystent AI</span>
+            <span onclick="toggleChat()" class="close-chat">&times;</span>
+        </div>
+        <div id="chatWindow" class="chat-messages">
+            <div class="msg-ai">Cześć! W czym mogę pomóc?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Napisz wiadomość..." class="pill">
+            <button onclick="sendMessage()" class="send-btn pill"><i class="fa-light fa-arrow-up"></i></button>
+        </div>
+    </div>
+    <button class="chat-fab" onclick="toggleChat()"><i class="fa-light fa-comment-dots"></i></button>
+
     <script src="/static/script.js"></script>
 </body>
 </html>
