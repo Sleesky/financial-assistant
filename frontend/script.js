@@ -81,6 +81,83 @@ async function uploadReceipt() {
     }
 }
 
+
+// --- MODUŁ HISTORII ---
+async function loadHistory() {
+    const listContainer = document.getElementById('history-list');
+    listContainer.innerHTML = '<p style="text-align:center; color:gray;">Ładowanie historii...</p>';
+
+    try {
+        const response = await fetch('/api/receipts');
+        const receipts = await response.json();
+
+        listContainer.innerHTML = ''; // Wyczyść loader
+
+        if (receipts.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center; color:#999;">Brak zapisanych paragonów.</p>';
+            return;
+        }
+
+        // Sortujemy: najnowsze na górze (jeśli ID rośnie z czasem)
+        receipts.reverse().forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            // Formatujemy datę i kwotę
+            const price = r.total_amount ? r.total_amount.toFixed(2) : "0.00";
+
+            item.innerHTML = `
+                <div class="history-info">
+                    <strong>${r.store_name}</strong> <span style="color:#27ae60; font-weight:bold;">${price} zł</span><br>
+                    <span class="history-date">${r.date || "Brak daty"} | ${r.category}</span>
+                    <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">
+                        ${r.items.length} produktów (ID: ${r.id})
+                    </div>
+                </div>
+                <button class="btn-delete" onclick="deleteReceipt(${r.id})">🗑 Usuń</button>
+            `;
+            listContainer.appendChild(item);
+        });
+
+        // Przy okazji odświeżmy też wykres, żeby dane były spójne
+        if (typeof loadDashboard === "function") {
+            loadDashboard();
+        }
+
+    } catch (error) {
+        console.error("Błąd historii:", error);
+        listContainer.innerHTML = '<p style="color:red; text-align:center;">Błąd pobierania historii</p>';
+    }
+}
+
+async function deleteReceipt(id) {
+    if (!confirm("Czy na pewno chcesz usunąć ten paragon? Tej operacji nie da się cofnąć.")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/receipts/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            // Odśwież listę po udanym usunięciu
+            loadHistory();
+        } else {
+            alert("Błąd usuwania paragonu.");
+        }
+    } catch (error) {
+        alert("Błąd połączenia: " + error.message);
+    }
+}
+
+// Dodajemy ładowanie historii do startu strony (razem z wykresem)
+document.addEventListener("DOMContentLoaded", () => {
+    loadHistory();
+    // loadDashboard jest już wywoływany wewnątrz loadHistory (linia 40),
+    // albo można zostawić oddzielnie - bez znaczenia.
+});
+
 async function sendMessage() {
     const input = document.getElementById('chatInput');
     const chatWindow = document.getElementById('chatWindow');
