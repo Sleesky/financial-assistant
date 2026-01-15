@@ -144,21 +144,50 @@ async def scan_receipt(file: UploadFile = File(...), db: Session = Depends(get_d
 
 # 3. Asystent Finansowy (Chatbot)
 @app.post("/api/chat")
-async def chat_with_assistant(query: dict):
+async def chat_with_assistant(query: dict, db: Session = Depends(get_db)):
     if not client:
-        return {"reply": "Błąd konfiguracji API"}
+        return {"reply": "Błąd konfiguracji API (brak klucza)"}
 
     user_message = query.get("message")
 
+    # 1. POBIERZ KONTEKST Z BAZY (RAG - Retrieval Augmented Generation)
+    # Pobieramy 5 ostatnich paragonów, żeby nie zapchać AI za dużą ilością tekstu
+    try:
+        receipts = db.query(models.Receipt).order_by(models.Receipt.id.desc()).limit(5).all()
+
+        # Budujemy "ściągę" dla AI
+        history_text = "Oto ostatnie zakupy użytkownika (Baza Danych):\n"
+        if not receipts:
+            history_text += "(Brak zapisanych paragonów w bazie)\n"
+        else:
+            for r in receipts:
+                # Wyciągamy też listę produktów do każdego paragonu
+                items_list = ", ".join([f"{i.name} ({i.price}zł)" for i in r.items])
+                history_text += f"- Data: {r.date}, Sklep: {r.store_name}, Suma: {r.total_amount} zł, Kategoria: {r.category}\n"
+                history_text += f"  Produkty: {items_list}\n"
+    except Exception as e:
+        history_text = f"(Błąd pobierania z bazy: {str(e)})"
+
+    # 2. SKLEJAMY PROMPT (Instrukcja + Dane + Pytanie)
+    full_prompt = f"""
+    Jesteś inteligentnym asystentem finansowym. Masz wgląd w historię zakupów użytkownika.
+
+    {history_text}
+
+    Pytanie użytkownika: {user_message}
+
+    Odpowiedz krótko i konkretnie, opierając się na powyższych danych. Jeśli pytają o coś, czego nie ma w bazie, powiedz o tym wprost.
+    """
+
+    # 3. WYŚLIJ DO GEMINI
     try:
         response = client.models.generate_content(
             model="gemini-flash-latest",
-            contents=f"Jesteś asystentem finansowym. Użytkownik pyta: {user_message}"
+            contents=full_prompt
         )
         return {"reply": response.text}
     except Exception as e:
-        return {"reply": f"Błąd chatu: {str(e)}"}
-
+        return {"reply": f"Błąd AI: {str(e)}"}
 
 # Serwowanie plików statycznych
 app.mount("/static", StaticFiles(directory="static"), name="static")

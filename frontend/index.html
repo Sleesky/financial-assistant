@@ -14,25 +14,53 @@
 
         <section id="scan-section">
             <h2>Dodaj Paragon</h2>
-            <input type="file" id="receiptInput" accept="image/*">
-            <button onclick="uploadReceipt()">Analizuj Paragon</button>
-            <div id="scanResult"></div>
-        </section>
+            <div style="text-align: center;">
+                <input type="file" id="receiptInput" accept="image/*">
+                <button onclick="uploadReceipt()">Analizuj Paragon</button>
+            </div>
 
-        <hr>
+            <div id="loader" class="loader">
+                🌀 Analizuję paragon z Gemini AI...
+            </div>
 
-        <section id="dashboard-section">
-            <h2>Twoje Wydatki</h2>
-            <p>Tutaj pojawi się wykres (później).</p>
+            <div id="receipt-card" class="receipt-card">
+                <div class="receipt-header">
+                    <h3 id="ui-store">Nazwa Sklepu</h3>
+                    <div class="receipt-info">
+                        Data: <span id="ui-date">---</span> | Kat: <span id="ui-category">---</span>
+                    </div>
+                </div>
+
+                <table class="receipt-table">
+                    <thead>
+                        <tr>
+                            <th>Produkt</th>
+                            <th style="text-align: right;">Cena</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ui-items">
+                        </tbody>
+                </table>
+
+                <div class="receipt-total">
+                    SUMA: <span id="ui-total" class="total-price">0.00</span> PLN
+                </div>
+
+                <div class="receipt-footer">
+                    Status: <span id="ui-status">---</span> (ID Bazy: <span id="ui-db-id">---</span>)
+                </div>
+            </div>
         </section>
 
         <hr>
 
         <section id="chat-section">
             <h2>Zapytaj Asystenta</h2>
-            <div id="chatWindow"></div>
-            <input type="text" id="chatInput" placeholder="Np. Ile wydałem w Biedronce?">
-            <button onclick="sendMessage()">Wyślij</button>
+            <div id="chatWindow" style="border:1px solid #eee; padding:10px; height:200px; overflow-y:scroll; margin-bottom:10px;"></div>
+            <div style="display: flex;">
+                <input type="text" id="chatInput" placeholder="Np. Ile wydałem w Biedronce?" style="flex-grow: 1;">
+                <button onclick="sendMessage()">Wyślij</button>
+            </div>
         </section>
     </div>
 
