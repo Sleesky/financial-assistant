@@ -2,18 +2,23 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # KLUCZOWA ZMIANA:
+    # Wskazujemy folder 'backend' jako kontekst.
+    # Docker automatycznie poszuka tam pliku 'Dockerfile' i 'requirements.txt'
+    build: ./backend
+
     container_name: fin_assistant_app
     ports:
       - "8000:8000"
     volumes:
-      # Mapowanie kodu backendu (zmiany widoczne od razu)
+      # Mapujemy kod backendu (żeby zmiany w Pythonie działały od razu)
       - ./backend:/app
-      # Mapowanie kodu frontendu
-      - ./frontend:/app/static
+      # Mapujemy frontend (jako pliki statyczne)
+      - ./frontend:/frontend
+
+    # Plik .env przenieśliśmy do backendu, więc wskazujemy go tutaj:
     env_file:
-      - .env
+      - ./backend/.env
+
     environment:
       - PYTHONUNBUFFERED=1
