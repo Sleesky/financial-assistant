@@ -1,3 +1,4 @@
+from sqlalchemy import func
 import os
 import json
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
@@ -141,6 +142,24 @@ async def scan_receipt(file: UploadFile = File(...), db: Session = Depends(get_d
         print(f"Błąd API: {e}")
         return {"error": str(e)}
 
+
+# --- NOWY ENDPOINT DO WYKRESU ---
+@app.get("/api/stats")
+async def get_stats(db: Session = Depends(get_db)):
+    try:
+        # Zapytanie SQL: SELECT category, SUM(total_amount) FROM receipts GROUP BY category
+        stats = db.query(
+            models.Receipt.category,
+            func.sum(models.Receipt.total_amount)
+        ).group_by(models.Receipt.category).all()
+
+        # Formatowanie wyniku dla Chart.js: {labels: [], data: []}
+        labels = [row[0] for row in stats]
+        values = [row[1] for row in stats]
+
+        return {"labels": labels, "values": values}
+    except Exception as e:
+        return {"error": str(e)}
 
 # 3. Asystent Finansowy (Chatbot)
 @app.post("/api/chat")
