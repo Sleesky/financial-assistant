@@ -158,21 +158,52 @@ async function confirmDelete() {
 
 // --- MODALS ---
 function openModal(id) {
+    // 1. Znajdź paragon
     const r = globalReceipts.find(item => item.id == id);
     if (!r) return;
+
+    // 2. Ustaw ID, Sklep, Datę i Kategorię
     document.getElementById('modal-receipt-id').value = r.id;
     document.getElementById('modal-store').value = r.store_name;
+
     const datePicker = document.querySelector("#modal-date")._flatpickr;
     if(datePicker) datePicker.setDate(r.date);
+
     document.getElementById('modal-category').value = r.category;
-    document.getElementById('modal-total').value = r.total_amount.toFixed(2);
+
+    // 3. Ustaw Sumę Całkowitą
+    const totalInput = document.getElementById('modal-total');
+    totalInput.value = r.total_amount.toFixed(2);
+
+    // --- NOWA BLOKADA DLA SUMY GŁÓWNEJ ---
+    // Nadpisujemy zdarzenie oninput, żeby blokowało wpisywanie 3 cyfr po przecinku
+    totalInput.oninput = function() {
+        if(this.value.includes('.')) {
+            let parts = this.value.split('.');
+            if(parts[1].length > 2) {
+                this.value = parts[0] + '.' + parts[1].slice(0, 2);
+            }
+        }
+    };
+
+    // 4. Wyczyść listę produktów i zbuduj ją na nowo
     const tbody = document.getElementById('modal-items');
     tbody.innerHTML = "";
+
     if (r.items && r.items.length > 0) {
-        r.items.forEach(item => addNewItemRow(item.name, item.price));
+        r.items.forEach(item => {
+            // Bezpieczne wyświetlanie
+            let safePrice = "";
+            if (item.price !== undefined && item.price !== null) {
+                safePrice = parseFloat(item.price).toFixed(2);
+            }
+            addNewItemRow(item.name, safePrice);
+        });
     } else {
         addNewItemRow();
     }
+
+    // 5. Pokaż okno
     document.getElementById('details-modal').style.display = 'flex';
 }
 
@@ -498,7 +529,7 @@ async function uploadReceipts() {
             }
         });
         updateUploadButton();
-        refreshStatusUI();
+        refreshStatusUI(savedCount);
         if (savedCount > 0) loadData();
     } catch (error) {
         loader.style.display = 'none';
@@ -524,21 +555,33 @@ function removeFileByFilename(filename, forceRemove) {
     updateUploadButton();
 }
 
-function refreshStatusUI() {
+// Zmieniamy definicję, aby przyjmowała parametr 'additionalSaved'
+function refreshStatusUI(additionalSaved = 0) {
     const statusMsg = document.getElementById('status-message');
     const errorItems = document.querySelectorAll('.preview-item.error');
-    let savedCount = 0;
+
+    // Zaczynamy od liczby, którą właśnie przekazaliśmy (np. z uploadu)
+    let savedCount = additionalSaved;
+
+    // Próbujemy odczytać, czy już wcześniej coś było zapisane (żeby nie tracić starego licznika przy odświeżaniu)
     if (statusMsg) {
         const match = statusMsg.innerText.match(/Zapisano:\s*(\d+)/);
-        if (match && match[1]) savedCount = parseInt(match[1]);
+        if (match && match[1]) {
+            savedCount += parseInt(match[1]); // Dodajemy istniejącą liczbę do nowej
+        }
     }
+
     const rejectedCount = errorItems.length;
     let summaryHtml = "";
+
+    // Teraz savedCount będzie > 0 po udanym uploadzie
     if (savedCount > 0) summaryHtml += `<span style="color:var(--success)"><i class="fa-solid fa-check-circle"></i> Zapisano: ${savedCount}</span>`;
+
     if (rejectedCount > 0) {
         summaryHtml += ` <span style="color:var(--danger); margin-left:10px;"><i class="fa-solid fa-circle-exclamation"></i> Odrzucono: ${rejectedCount}</span>`;
         summaryHtml += `<br><small style="color:var(--text-muted)">Najedź na czerwone kafelki, aby ponowić.</small>`;
     }
+
     if (statusMsg) {
         statusMsg.innerHTML = summaryHtml;
         statusMsg.className = "status-summary";
@@ -572,10 +615,28 @@ function openManualAddModal() {
 function addNewItemRow(name = "", price = "") {
     const tbody = document.getElementById('modal-items');
     const tr = document.createElement('tr');
+
     tr.innerHTML = `
         <td><input type="text" class="modern-input" placeholder="Nazwa produktu" value="${name}"></td>
-        <td><input type="number" step="0.01" class="modern-input text-right" placeholder="0.00" value="${price}" oninput="calculateItemsSum()"></td>
-        <td style="width: 40px; text-align: center;"><button class="btn-icon-mini delete-row-btn" onclick="this.closest('tr').remove(); calculateItemsSum()"><i class="fa-solid fa-minus"></i></button></td>
+        <td>
+            <input type="number" step="0.01" class="modern-input text-right" placeholder="0.00" value="${price}" 
+            oninput="
+                /* LOGIKA BLOKADY: */
+                if(this.value.includes('.')) {
+                    let parts = this.value.split('.');
+                    if(parts[1].length > 2) {
+                        /* Jeśli są więcej niż 2 cyfry po kropce, utnij nadmiar */
+                        this.value = parts[0] + '.' + parts[1].slice(0, 2);
+                    }
+                }
+                calculateItemsSum();
+            ">
+        </td>
+        <td style="width: 40px; text-align: center;">
+            <button class="btn-icon-mini delete-row-btn" onclick="this.closest('tr').remove(); calculateItemsSum()">
+                <i class="fa-solid fa-minus"></i>
+            </button>
+        </td>
     `;
     tbody.appendChild(tr);
 }
@@ -592,8 +653,13 @@ function calculateItemsSum() {
 async function saveReceiptChanges() {
     const id = document.getElementById('modal-receipt-id').value;
     const totalInput = document.getElementById('modal-total');
+
+    // 1. Czyścimy sumę całkowitą
     let totalVal = parseFloat(totalInput.value) || 0;
+    totalVal = Math.round(totalVal * 100) / 100;
     totalInput.value = totalVal.toFixed(2);
+
+    // 2. Budujemy obiekt danych
     const dataPayload = {
         store_name: document.getElementById('modal-store').value || "Sklep",
         date: document.getElementById('modal-date').value,
@@ -601,29 +667,71 @@ async function saveReceiptChanges() {
         total_amount: totalVal,
         items: []
     };
+
+    // 3. PĘTLA GŁÓWNA: Pobieramy produkty i od razu je zaokrąglamy
     document.querySelectorAll('#modal-items tr').forEach(row => {
         const inputs = row.querySelectorAll('input');
-        if (inputs[0].value) dataPayload.items.push({ name: inputs[0].value, price: parseFloat(inputs[1].value) || 0 });
+        const name = inputs[0].value;
+
+        if (name) {
+            let rawPrice = parseFloat(inputs[1].value) || 0;
+            // TU JEST KLUCZ: Zaokrąglamy przed dodaniem do listy
+            let roundedPrice = Math.round(rawPrice * 100) / 100;
+
+            dataPayload.items.push({
+                name: name,
+                price: roundedPrice
+            });
+        }
     });
+
+    // 4. Definicja funkcji wysyłającej
     const sendData = async () => {
         let response;
-        if (id === "NEW") {
-            response = await fetch('/api/receipts/manual', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(dataPayload) });
-        } else {
-            response = await fetch(`/api/receipts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(dataPayload) });
+        try {
+            const options = {
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dataPayload)
+            };
+
+            if (id === "NEW") {
+                response = await fetch('/api/receipts/manual', { ...options, method: 'POST' });
+            } else {
+                response = await fetch(`/api/receipts/${id}`, { ...options, method: 'PUT' });
+            }
+
+            if (response.ok) {
+                closeModal('mismatch-modal');
+                closeModal('details-modal');
+                loadData();
+            } else {
+                alert("Błąd zapisu danych.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Błąd połączenia z serwerem.");
         }
-        closeModal('mismatch-modal');
-        closeModal('details-modal');
-        loadData();
     };
+
+    // 5. Sprawdzenie sum (Mismatch Check)
     const calcSum = calculateItemsSum();
     if (Math.abs(calcSum - totalVal) > 0.01) {
         document.getElementById('mismatch-new-sum').innerText = calcSum.toFixed(2);
-        document.getElementById('mismatch-fix-btn').onclick = () => { totalInput.value = calcSum.toFixed(2); dataPayload.total_amount = calcSum; sendData(); };
+
+        document.getElementById('mismatch-fix-btn').onclick = () => {
+            // Naprawiamy dane i wysyłamy
+            const fixedSum = parseFloat(calcSum.toFixed(2));
+            totalInput.value = fixedSum.toFixed(2);
+            dataPayload.total_amount = fixedSum;
+            sendData();
+        };
+
         document.getElementById('mismatch-save-btn').onclick = sendData;
         document.getElementById('mismatch-modal').style.display = 'flex';
         return;
     }
+
+    // Wyślij, jeśli wszystko gra
     sendData();
 }
 
